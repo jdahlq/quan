@@ -13,6 +13,8 @@ CAMEL_TO_UNDERSCORE_REGEX = ///
   )
 ///g
 
+UNDERSCORE_TO_CAMEL_REGEX = /_[a-z]/gi
+
 class PersistedModel extends Model
 
 # Prototype properties
@@ -63,7 +65,9 @@ class PersistedModel extends Model
         return cb(err, null)
 
       dbRecord = res.rows[0]
-      @[key] = val for key, val of dbRecord
+      for key, val of dbRecord
+        camelKey = key.toLowerCase().replace(UNDERSCORE_TO_CAMEL_REGEX, (m) -> m[1].toUpperCase())
+        @[camelKey] = val
       @resetChangedAttributeTracking()
       console.log "Saved #{@constructor.name}##{@id}:", res
       cb(null, res)
