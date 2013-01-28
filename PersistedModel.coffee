@@ -26,9 +26,10 @@ class PersistedModel extends Model
       writable: true
 
   # Prototype methods
-  save: ->
+  save: (cb) ->
 
     onResult = (err, res) =>
+      cb(err, res)
       return console.error("Oh jesus god no:", err) if err?
 
       @id = res.rows[0].id
