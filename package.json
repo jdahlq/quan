@@ -2,7 +2,12 @@
   "name": "quan",
   "version": "0.0.1",
   "dependencies": {
-    "js-sql": "https://github.com/jdahlq/js-sql/tarball/master"
+    "js-sql": "git://github.com/jdahlq/js-sql.git"
+  },
+  "devDependencies": {
+    "vows": "0.7.x"
+  },
+  "scripts": {
+    "test": "coffee ./tests"
   }
 }
-

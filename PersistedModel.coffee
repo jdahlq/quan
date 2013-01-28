@@ -26,6 +26,34 @@ class PersistedModel extends Model
       writable: true
 
   # Prototype methodss
+  # ------------------
+
+  constructor: (atts={}) ->
+    return unless @attributeNames?
+
+    vals = {}
+    descriptors = {}
+    changed = []
+    for key in @attributeNames
+      vals[key] = atts[key]
+      descriptors[key] = do (key) ->
+        get: -> vals[key]
+        set: (val) ->
+          vals[key] = val
+          changed.push key
+
+    @defineAttributes descriptors
+
+    @defineProperties
+      changedAttributes:
+        get: ->
+          atts = {}
+          atts[key] = @[key] for key in changed
+          atts
+      resetChangedAttributeTracking:
+        value: -> changed = []
+
+
   save: (cb) ->
 
     onResult = (err, res) =>
@@ -62,7 +90,26 @@ class PersistedModel extends Model
     suite.addBatch
       '@tableName':
         topic: new class ABCPuzzleB23ClassCd3D extends PersistedModel
-        'shound be the class name, lowercase, with underscores': (puzzle) ->
-          assert.equal puzzle.tableName, 'abc_puzzle_b23_class_cd_3d'
+        'shound be the class name, lowercase, with underscores, plural': (puzzle) ->
+          assert.equal puzzle.tableName, 'abc_puzzle_b23_class_cd_3ds'
+
+      'Attributes':
+        topic: new class Puzzle extends PersistedModel
+          attributeNames: ['id', 'difficulty', 'solutions']
+
+        'should be present': (puzzle) ->
+          assert.deepEqual Object.keys(puzzle.attributes), ['id', 'difficulty', 'solutions']
+
+        'should start out unchanged (@changedAttributes should be empty)': (puzzle) ->
+          assert.isEmpty puzzle.changedAttributes
+
+        'should be reported as changed': (puzzle) ->
+          puzzle.difficulty = 5
+          puzzle.solutions = 'asdfweg+eoigjwe'
+          assert.deepEqual puzzle.changedAttributes, {difficulty: 5, solutions: 'asdfweg+eoigjwe'}
+
+        'should report none changed after calling resetChangedAttributeTracking()': (puzzle) ->
+          puzzle.resetChangedAttributeTracking()
+          assert.isEmpty puzzle.changedAttributes
 
 module.exports = PersistedModel
