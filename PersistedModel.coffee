@@ -61,7 +61,9 @@ class PersistedModel extends Model
         console.error("Oh jesus god no:", err)
         return cb(err, null)
 
-      @id = res.rows[0].id
+      dbRecord = res.rows[0]
+      @[key] = val for key, val of dbRecord
+      @resetChangedAttributeTracking()
       console.log "Saved #{@constructor.name}##{@id}:", res
       cb(null, res)
 
@@ -79,7 +81,7 @@ class PersistedModel extends Model
       @db.query new sql.Query()
         .insertInto(@tableName)
         .values(@attributes)
-        .returning('id')
+        .returning('*')
         .toString()
       , onResult
 
