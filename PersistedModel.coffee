@@ -25,7 +25,7 @@ class PersistedModel extends Model
     db:
       writable: true
 
-  # Prototype methods
+  # Prototype methodss
   save: (cb) ->
 
     onResult = (err, res) =>
