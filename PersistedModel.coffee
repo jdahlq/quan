@@ -71,6 +71,7 @@ class PersistedModel extends Model
         .update(@tableName)
         .set(@changedAttributes)
         .where(id: @id)
+        .returning('*')
         .toString()
       , onResult
       # else assume the record is new
