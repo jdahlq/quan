@@ -30,6 +30,8 @@ class PersistedModel extends Model
 
     onResult = (err, res) =>
       return console.error("Oh jesus god no:", err) if err?
+
+      @id = res.rows[0].id
       console.log "Saved #{@constructor.name}##{@id}:", res
 
     # If @id is present, assume the record exists in the db
@@ -38,7 +40,6 @@ class PersistedModel extends Model
         .update(@tableName)
         .set(@attributes)
         .where(id: @id)
-        .returning('id')
         .toString()
       , onResult
       # else assume the record is new
@@ -46,6 +47,7 @@ class PersistedModel extends Model
       @db.query new sql.Query()
         .insertInto(@tableName)
         .values(@attributes)
+        .returning('id')
         .toString()
       , onResult
 
