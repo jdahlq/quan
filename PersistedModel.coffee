@@ -29,11 +29,13 @@ class PersistedModel extends Model
   save: (cb) ->
 
     onResult = (err, res) =>
-      cb(err, res)
-      return console.error("Oh jesus god no:", err) if err?
+      if err?
+        console.error("Oh jesus god no:", err)
+        return cb(err, null)
 
       @id = res.rows[0].id
       console.log "Saved #{@constructor.name}##{@id}:", res
+      cb(null, res)
 
     # If @id is present, assume the record exists in the db
     if @id?
