@@ -69,7 +69,7 @@ class PersistedModel extends Model
     if @id?
       @db.query new sql.Query()
         .update(@tableName)
-        .set(@attributes)
+        .set(@changedAttributes)
         .where(id: @id)
         .toString()
       , onResult
