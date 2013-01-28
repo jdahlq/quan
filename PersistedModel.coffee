@@ -15,13 +15,13 @@ CAMEL_TO_UNDERSCORE_REGEX = ///
 
 class PersistedModel extends Model
 
-  # Prototype properties
+# Prototype properties
   @::defineProperties
     tableName:
       get: ->
         @constructor.name
           .replace(CAMEL_TO_UNDERSCORE_REGEX, (m) -> "#{m}_")
-          .toLowerCase()
+          .toLowerCase() + 's'
     db:
       writable: true
 
@@ -30,7 +30,7 @@ class PersistedModel extends Model
 
     onResult = (err, res) =>
       return console.error("Oh jesus god no:", err) if err?
-      console.log "Saved #{@::constructor.name}##{@id}:", res
+      console.log "Saved #{@constructor.name}##{@id}:", res
 
     # If @id is present, assume the record exists in the db
     if @id?
@@ -41,7 +41,7 @@ class PersistedModel extends Model
         .returning('id')
         .toString()
       , onResult
-    # else assume the record is new
+      # else assume the record is new
     else
       @db.query new sql.Query()
         .insertInto(@tableName)
