@@ -53,6 +53,7 @@ class PersistedModel extends Model
       resetChangedAttributeTracking:
         value: -> changed = []
 
+    Object.preventExtensions @
 
   save: (cb) ->
 
@@ -114,5 +115,8 @@ class PersistedModel extends Model
         'should report none changed after calling resetChangedAttributeTracking()': (puzzle) ->
           puzzle.resetChangedAttributeTracking()
           assert.isEmpty puzzle.changedAttributes
+
+        'should prevent extensions after construction': (puzzle) ->
+          assert.throws (-> puzzle.badWolf = 'nope!'), Error
 
 module.exports = PersistedModel
