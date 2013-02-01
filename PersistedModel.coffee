@@ -98,8 +98,8 @@ class PersistedModel extends Model
 
         'should be reported as changed': (puzzle) ->
           puzzle.difficulty = 5
-          puzzle.solutions = 'asdfweg+eoigjwe'
-          assert.deepEqual puzzle.changedAttributes, {difficulty: 5, solutions: 'asdfweg+eoigjwe'}
+          puzzle.solutions = 'fifty'
+          assert.deepEqual puzzle.changedAttributes, {difficulty: 5, solutions: 'fifty'}
 
         'should report none changed after calling resetChangedAttributeTracking()': (puzzle) ->
           puzzle.resetChangedAttributeTracking()
@@ -107,6 +107,35 @@ class PersistedModel extends Model
 
         'should prevent extensions after construction': (puzzle) ->
           assert.throws (-> puzzle.badWolf = 'nope!'), Error
+
+      'When Quan is configured with a db, PersistedModel':
+        topic: ->
+          quan = require './index'
+          EventEmitter = (require 'events').EventEmitter
+
+          queryEmitter = new class QueryEmitter extends EventEmitter
+            query: (q, cb) -> @emit 'call', q, cb
+          quan.configure null, queryEmitter
+
+          class Eccentric extends PersistedModel
+            attributeNames: ['id', 'name', 'lintCollection', 'smelliness']
+
+          [
+            new Eccentric name: 'Boregard', lintCollection: ['flannel', 'fleece', 'flax'], smelliness: 7/10
+            queryEmitter
+          ]
+
+        'should save to @db':
+          topic: ([model, queryEmitter]) ->
+            queryEmitter.on 'call', (q, cb) =>
+              cb null, {rows:[id:123]}
+              @callback model, q
+            model.save()
+            return
+          'with the correct query': (model, q) ->
+            assert.equal q, """INSERT INTO eccentrics (id, name, lint_collection, smelliness) VALUES (DEFAULT, 'Boregard', '{"flannel", "fleece", "flax"}', 0.7) RETURNING *;"""
+          'should set the returned id': (model, q) ->
+            assert.equal model.id, 123
 
 module.exports = PersistedModel
 
