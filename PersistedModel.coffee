@@ -2,28 +2,12 @@
 Model = require './Model'
 sql = require 'js-sql'
 
-# Match chars that should be followed by an underscore
-CAMEL_TO_UNDERSCORE_REGEX = ///
-  (
-      [^A-Z0-9]               # Match lowercase/non-num...
-      (?=[A-Z0-9])            # ... only if it is followed by uppercase/num
-    |                       # OR
-      [A-Z0-9]                # Match uppercase/num...
-      (?=[A-Z0-9][^A-Z0-9])   # ... only if it is followed by uppercase/num then lowercase/non-num
-  )
-///g
-
-UNDERSCORE_TO_CAMEL_REGEX = /_[a-z]/gi
-
 class PersistedModel extends Model
 
 # Prototype properties
   @::defineProperties
     tableName:
-      get: ->
-        @constructor.name
-          .replace(CAMEL_TO_UNDERSCORE_REGEX, (m) -> "#{m}_")
-          .toLowerCase() + 's'
+      get: -> camelToSnake(@constructor.name) + 's'
     db:
       writable: true
 
@@ -36,8 +20,11 @@ class PersistedModel extends Model
     vals = {}
     descriptors = {}
     changed = []
+    isNewRecord = !atts.id? # If id isn't present, assume it is a new record
     for key in @attributeNames
-      vals[key] = atts[key]
+      if val = atts[key]
+        vals[key] = val
+        changed.push key if isNewRecord
       descriptors[key] = do (key) ->
         get: -> vals[key]
         set: (val) ->
@@ -64,13 +51,11 @@ class PersistedModel extends Model
         console.error("Oh jesus god no:", err)
         return cb(err, null)
 
-      dbRecord = res.rows[0]
-      for key, val of dbRecord
-        camelKey = key.toLowerCase().replace(UNDERSCORE_TO_CAMEL_REGEX, (m) -> m[1].toUpperCase())
-        @[camelKey] = val
+      dbRecord = camelifyKeys res.rows[0]
+      @[key] = val for key, val of dbRecord
       @resetChangedAttributeTracking()
       console.log "Saved #{@constructor.name}##{@id}:", res
-      cb(null, res)
+      cb? null, dbRecord
 
     # If @id is present, assume the record exists in the db
     if @id?
@@ -124,3 +109,34 @@ class PersistedModel extends Model
           assert.throws (-> puzzle.badWolf = 'nope!'), Error
 
 module.exports = PersistedModel
+
+# Match chars that should be followed by an underscore
+CAMEL_TO_SNAKE_REGEX = ///
+  (
+      [^A-Z0-9]               # Match lowercase/non-num...
+      (?=[A-Z0-9])            # ... only if it is followed by uppercase/num
+    |                       # OR
+      [A-Z0-9]                # Match uppercase/num...
+      (?=[A-Z0-9][^A-Z0-9])   # ... only if it is followed by uppercase/num then lowercase/non-num
+  )
+///g
+
+SNAKE_TO_CAMEL_REGEX = /_[a-z]/gi
+
+camelToSnake = (camelStr) ->
+  camelStr
+    .replace(CAMEL_TO_SNAKE_REGEX, (m) -> "#{m}_")
+    .toLowerCase()
+
+snakeToCamel = (snake_str) ->
+  snake_str.toLowerCase().replace(SNAKE_TO_CAMEL_REGEX, (m) -> m[1].toUpperCase())
+
+camelifyKeys = (snake_key_hash) ->
+  camelKeyHash = {}
+  camelKeyHash[snakeToCamel key] = val for key, val of snake_key_hash
+  camelKeyHash
+
+snakifyKeys = (camelKeyHash) ->
+  snake_key_hash = {}
+  snake_key_hash[camelToSnake key] = val for key, val of camelKeyHash
+  snake_key_hash
