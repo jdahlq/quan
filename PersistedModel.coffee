@@ -41,12 +41,18 @@ class PersistedModel extends Model
           atts
       resetChangedAttributeTracking:
         value: -> changed = []
+      saving:
+        value: false
+        writable: true
 
     Object.preventExtensions @
 
   save: (cb) ->
+    throw "Called PersistedModel.save() when already saving!" if @saving
 
     onResult = (err, res) =>
+      @saving = false
+
       if err?
         console.error("Oh jesus god no:", err)
         return cb(err, null)
@@ -74,6 +80,8 @@ class PersistedModel extends Model
         .returning('*')
         .toString()
       , onResult
+
+    @saving = true
 
   # Class methods
   @load: (where...) ->
@@ -127,7 +135,7 @@ class PersistedModel extends Model
 
         'should save to @db':
           topic: ([model, queryEmitter]) ->
-            queryEmitter.on 'call', (q, cb) =>
+            queryEmitter.on 'call', (q, cb) => process.nextTick =>
               cb null, {rows:[id:123]}
               @callback model, q
             model.save()
@@ -136,6 +144,9 @@ class PersistedModel extends Model
             assert.equal q, """INSERT INTO eccentrics (id, name, lint_collection, smelliness) VALUES (DEFAULT, 'Boregard', '{"flannel", "fleece", "flax"}', 0.7) RETURNING *;"""
           'should set the returned id': (model, q) ->
             assert.equal model.id, 123
+
+        'should throw if save() is called while already saving': ([model, queryEmitter]) ->
+          assert.throws -> model.save()
 
 module.exports = PersistedModel
 
