@@ -84,8 +84,46 @@ class PersistedModel extends Model
     @saving = true
 
   # Class methods
-  @load: (where...) ->
-    @db.load @::tableName, where
+  @find: (where..., cb) ->
+    onResult = (err, res) =>
+      if err?
+        console.error("Oh jesus god no:", err)
+        return cb err, null
+
+      return cb null, [] unless res.rows.length > 0
+
+      dbRecords = (camelifyKeys row for row in res.rows)
+      models = (new @::constructor dbRecord for dbRecord in dbRecords)
+      console.log "Loaded #{models.length} models."
+      cb null, models
+
+    @::db.query new sql.Query()
+      .select('*')
+      .from(@::tableName)
+      .where(where)
+      .toString()
+    , onResult
+
+  @findOne: (where..., cb) ->
+    onResult = (err, res) =>
+      if err?
+        console.error("Oh jesus god no:", err)
+        return cb err, null
+
+      return cb null, null unless res.rows.length > 0
+
+      dbRecord = camelifyKeys res.rows[0]
+      model = new @::constructor dbRecord
+      console.log "Loaded #{@::constructor.name}##{model.id}"
+      cb null, model
+
+    @::db.query new sql.Query()
+      .select('*')
+      .from(@::tableName)
+      .where(where)
+      .limit(1)
+      .toString()
+    , onResult
 
   @tests: (suite, assert) ->
     suite.addBatch
